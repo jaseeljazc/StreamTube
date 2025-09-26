@@ -1,184 +1,235 @@
-// // app/components/VideoPlayer.tsx
-// 'use client';
-
-// import { useEffect, useRef, useState } from 'react';
-
-// interface VideoPlayerProps {
-//   userId: number;
-// }
-
-// export default function VideoPlayer({ userId }: VideoPlayerProps) {
-//   const videoRef = useRef<HTMLVideoElement>(null);
-//   const [error, setError] = useState<string>('');
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     loadVideo();
-//   }, [userId]);
-
-//   const loadVideo = async () => {
-//     if (!videoRef.current) return;
-
-//     try {
-//       // Check if HLS is supported
-//       if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-//         // Native HLS support (Safari)
-//         videoRef.current.src = '/api/stream/playlist.m3u8';
-//         setLoading(false);
-//       } else if (typeof window !== 'undefined') {
-//         // Use HLS.js for other browsers
-//         const { default: Hls } = await import('hls.js');
-        
-//         if (Hls.isSupported()) {
-//           const hls = new Hls({
-//             xhrSetup: (xhr, url) => {
-//               // Add authentication headers
-//               const token = document.cookie
-//                 .split('; ')
-//                 .find(row => row.startsWith('auth-token='))
-//                 ?.split('=')[1];
-              
-//               if (token) {
-//                 xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-//               }
-//             }
-//           });
-
-//           hls.loadSource('/api/stream/playlist.m3u8');
-//           hls.attachMedia(videoRef.current);
-          
-//           hls.on(Hls.Events.MANIFEST_PARSED, () => {
-//             setLoading(false);
-//           });
-
-//           hls.on(Hls.Events.ERROR, (event, data) => {
-//             console.error('HLS Error:', data);
-//             setError(`Playback error: ${data.details}`);
-//             setLoading(false);
-//           });
-
-//           // Cleanup
-//           return () => {
-//             hls.destroy();
-//           };
-//         } else {
-//           setError('HLS is not supported in this browser');
-//           setLoading(false);
-//         }
-//       }
-//     } catch (err) {
-//       console.error('Video loading error:', err);
-//       setError('Failed to load video player');
-//       setLoading(false);
-//     }
-//   };
-
-//   if (loading) {
-//     return (
-//       <div style={{ 
-//         textAlign: 'center', 
-//         padding: '2rem',
-//         backgroundColor: '#f8f9fa',
-//         borderRadius: '8px'
-//       }}>
-//         <div>Loading secure video player...</div>
-//       </div>
-//     );
-//   }
-
-//   if (error) {
-//     return (
-//       <div style={{ 
-//         textAlign: 'center', 
-//         padding: '2rem',
-//         backgroundColor: '#ffebee',
-//         borderRadius: '8px',
-//         color: '#d32f2f'
-//       }}>
-//         <div>{error}</div>
-//         <button 
-//           onClick={loadVideo}
-//           style={{
-//             marginTop: '1rem',
-//             padding: '0.5rem 1rem',
-//             backgroundColor: '#007bff',
-//             color: 'white',
-//             border: 'none',
-//             borderRadius: '4px',
-//             cursor: 'pointer'
-//           }}
-//         >
-//           Retry
-//         </button>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div>
-//       <video
-//         ref={videoRef}
-//         controls
-//         style={{
-//           width: '100%',
-//           maxWidth: '800px',
-//           height: 'auto',
-//           borderRadius: '8px'
-//         }}
-//         poster="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQ1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7wn5OSIFN0cmVhbWluZyBWaWRlbyAo0JXQvdC60YXQuLLQvdC10L7QvVC40L7QvjwvdGV4dD48L3N2Zz4="
-//       >
-//         Your browser does not support the video tag.
-//       </video>
-      
-//       <div style={{ 
-//         marginTop: '1rem', 
-//         fontSize: '0.9rem', 
-//         color: '#666',
-//         backgroundColor: '#f8f9fa',
-//         padding: '1rem',
-//         borderRadius: '4px'
-//       }}>
-//         <strong>Note:</strong> This is a demo with a placeholder video. In production, you would:
-//         <ul style={{ marginTop: '0.5rem', marginBottom: 0 }}>
-//           <li>Use FFmpeg to create encrypted HLS segments</li>
-//           <li>Store video files securely on your server or CDN</li>
-//           <li>Implement proper key rotation and management</li>
-//         </ul>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-'use client';
-
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import Hls from 'hls.js';
 
 interface VideoPlayerProps {
-  userId: number;
-  autoPlay?: boolean; // <-- new optional prop
+  videoId: string;
+  className?: string;
 }
 
-export default function VideoPlayer({ userId, autoPlay = false }: VideoPlayerProps) {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, className }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Function to get auth token (adjust based on your auth implementation)
+  const getAuthToken = () => {
+    // Option 1: From localStorage
+    const token = localStorage.getItem('authToken') || localStorage.getItem('auth-token');
+    if (token) return token;
+
+    // Option 2: From cookies
+    const cookies = document.cookie.split(';');
+    const authCookie = cookies.find(cookie => cookie.trim().startsWith('auth-token='));
+    if (authCookie) {
+      return authCookie.split('=')[1];
+    }
+
+    return null;
+  };
 
   useEffect(() => {
-    if (autoPlay && videoRef.current) {
-      videoRef.current.play().catch(() => {
-        console.warn('Autoplay failed (browser policy)');
-      });
+    const video = videoRef.current;
+    if (!video) return;
+
+    const token = getAuthToken();
+    if (!token) {
+      setError('Authentication required. Please log in.');
+      setLoading(false);
+      return;
     }
-  }, [autoPlay]);
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        debug: process.env.NODE_ENV === 'development',
+        xhrSetup: function(xhr, url) {
+          console.log('Setting up XHR for:', url);
+          
+          // Always send credentials (cookies)
+          xhr.withCredentials = true;
+          
+          // Send Authorization header
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          
+          // Additional headers if needed
+          xhr.setRequestHeader('Content-Type', 'application/json');
+        },
+        // Retry configuration
+        manifestLoadingTimeOut: 10000,
+        manifestLoadingMaxRetry: 2,
+        levelLoadingTimeOut: 10000,
+        levelLoadingMaxRetry: 2,
+        fragLoadingTimeOut: 20000,
+        fragLoadingMaxRetry: 3,
+      });
+
+      hlsRef.current = hls;
+
+      // Error handling
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error('HLS.js error details:', {
+          type: data.type,
+          details: data.details,
+          fatal: data.fatal,
+          url: data.url,
+          response: data.response,
+          networkDetails: data.networkDetails,
+          error: data.error
+        });
+        
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              if (data.response?.code === 401) {
+                setError('Authentication failed. Please log in again.');
+              } else if (data.response?.code === 404) {
+                setError(`Resource not found: ${data.url}`);
+              } else {
+                setError(`Network error (${data.response?.code || 'unknown'}): ${data.details}`);
+              }
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log('Attempting to recover from media error');
+              setError('Media error occurred, attempting recovery...');
+              hls.recoverMediaError();
+              return; // Don't set loading to false yet
+            default:
+              setError(`Fatal error (${data.type}): ${data.details}`);
+              hls.destroy();
+              break;
+          }
+        } else {
+          console.warn('Non-fatal HLS error:', data.details);
+        }
+        setLoading(false);
+      });
+
+      // Success events
+      hls.on(Hls.Events.MANIFEST_LOADED, () => {
+        console.log('Manifest loaded successfully');
+        setLoading(false);
+        setError(null);
+      });
+
+      hls.on(Hls.Events.LEVEL_LOADED, () => {
+        console.log('Level loaded');
+      });
+
+      // Load the playlist
+      const playlistUrl = `/api/stream/playlist.m3u8?videoId=${videoId}`;
+      console.log('Loading playlist:', playlistUrl);
+      
+      // Test playlist accessibility first
+      fetch(playlistUrl, {
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      })
+      .then(response => {
+        console.log('Playlist response status:', response.status);
+        return response.text();
+      })
+      .then(text => {
+        console.log('Playlist content preview:', text.substring(0, 200));
+      })
+      .catch(err => {
+        console.error('Playlist test failed:', err);
+      });
+      
+      hls.loadSource(playlistUrl);
+      hls.attachMedia(video);
+
+      // Auto-play when ready
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('Manifest parsed, ready to play');
+        video.play().catch(e => {
+          console.log('Autoplay prevented:', e);
+          // Autoplay was prevented, user needs to interact first
+        });
+      });
+
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS support (Safari)
+      const playlistUrl = `/api/stream/playlist.m3u8?videoId=${videoId}`;
+      
+      // For Safari, we need to handle auth differently
+      fetch(playlistUrl, {
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        video.src = url;
+        video.addEventListener('loadedmetadata', () => {
+          setLoading(false);
+          setError(null);
+        });
+        video.addEventListener('error', () => {
+          setError('Error loading video');
+          setLoading(false);
+        });
+      })
+      .catch(err => {
+        console.error('Error loading video:', err);
+        setError('Failed to load video');
+        setLoading(false);
+      });
+
+    } else {
+      setError('HLS is not supported in this browser');
+      setLoading(false);
+    }
+
+    // Cleanup
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [videoId]);
+
+  if (error) {
+    return (
+      <div className={`flex items-center justify-center bg-gray-900 text-white p-8 ${className}`}>
+        <div className="text-center">
+          <p className="text-red-400 mb-2">⚠️ Error</p>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <video
-      ref={videoRef}
-      controls
-      className="w-full rounded-lg shadow-md"
-      poster={`/videos/video-${userId}.png`}
-    >
-      <source src={`/videos/video-${userId}.mp4`} type="video/mp4" />
-      Your browser does not support the video tag.
-    </video>
+    <div className={`relative ${className}`}>
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+            <p>Loading video...</p>
+          </div>
+        </div>
+      )}
+      <video
+        ref={videoRef}
+        controls
+        className="w-full h-full"
+        playsInline
+        preload="metadata"
+      >
+        Your browser does not support the video tag.
+      </video>
+    </div>
   );
-}
+};
+
+export default VideoPlayer;

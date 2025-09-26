@@ -36,7 +36,6 @@
 //   }
 // };
 
-
 //   const handleLogout = () => {
 //     document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 //     window.location.href = '/login';
@@ -89,11 +88,11 @@
 //   );
 // }
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import VideoPlayer from '../components/VideoPlayer';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import VideoPlayer from "../components/VideoPlayer";
 
 interface Video {
   id: number;
@@ -108,10 +107,10 @@ export default function DashboardPage() {
 
   // Sample video list (replace with real data)
   const videos: Video[] = [
-    { id: 1, title: 'Demo Video 1', thumbnail: '/videos/video-1.png' },
-    { id: 2, title: 'Demo Video 2', thumbnail: '/videos/video-2.png' },
-    { id: 3, title: 'Demo Video 3', thumbnail: '/videos/video-3.png' },
-    { id: 4, title: 'Demo Video 4', thumbnail: '/videos/video-4.png' },
+    { id: 1, title: "Demo Video 1", thumbnail: "/videos/video-1.png" },
+    { id: 2, title: "Demo Video 2", thumbnail: "/videos/video-2.png" },
+    { id: 3, title: "Demo Video 3", thumbnail: "/videos/video-3.png" },
+    { id: 4, title: "Demo Video 4", thumbnail: "/videos/video-4.png" },
   ];
 
   useEffect(() => {
@@ -120,28 +119,30 @@ export default function DashboardPage() {
 
   const fetchUser = async () => {
     try {
-      const response = await fetch('/api/auth/me', { credentials: 'include' });
+      const response = await fetch("/api/auth/me", { credentials: "include" });
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
       } else {
-        console.error('Auth failed', response.status);
+        console.error("Auth failed", response.status);
       }
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      console.error("Failed to fetch user:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = () => {
-    document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    window.location.href = '/login';
+    document.cookie =
+      "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    window.location.href = "/login";
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-400">Loading...</div>;
+  if (loading)
+    return <div className="p-8 text-center text-gray-400">Loading...</div>;
   if (!user) {
-    window.location.href = '/login';
+    window.location.href = "/login";
     return null;
   }
 
@@ -163,7 +164,9 @@ export default function DashboardPage() {
 
       {/* Video Cards Grid */}
       <main className="max-w-7xl mx-auto p-8">
-        <h2 className="text-3xl font-bold text-white mb-6">Recommended Videos</h2>
+        <h2 className="text-3xl font-bold text-white mb-6">
+          Recommended Videos
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {videos.map((video) => (
             <div
@@ -184,7 +187,9 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-100">{video.title}</h3>
+                <h3 className="text-lg font-semibold text-gray-100">
+                  {video.title}
+                </h3>
               </div>
             </div>
           ))}
