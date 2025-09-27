@@ -14,7 +14,7 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, onLogin, onLog
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold text-red-500">StreamFlix</h1>
+              <h1 className="text-2xl font-bold text-purple-500">StreamTube</h1>
             </div>
             
             {/* Desktop Navigation */}
@@ -31,7 +31,6 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated, onLogin, onLog
           {/* Right side */}
           <div className="hidden md:block">
             <div className="flex items-center space-x-4">
-              <Search className="h-5 w-5 cursor-pointer hover:text-red-400 transition-colors" />
               {isAuthenticated ? (
                 <div className="flex items-center space-x-4">
                   <User className="h-5 w-5" />
