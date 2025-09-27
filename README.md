@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StreamTube - Secure Video Streaming
 
-## Getting Started
+A Next.js video streaming platform with AES-128 encryption and JWT authentication.
 
-First, run the development server:
+##  Quick Setup
+
+### 1. Install
+```bash
+git clone <your-repo-url>
+cd streamtube
+npm install
+```
+
+### 2. Environment
+Create `.env.local`:
+```
+JWT_SECRET=your-secret-key-here
+NODE_ENV=development
+```
+
+### 3. Create Directories
+```bash
+mkdir -p public/videos
+```
+
+### 4. Generate Encryption Key
+```bash
+# Create encryption key
+openssl rand -hex 16 > enc.key
+
+# Create key info file
+echo "http://localhost:3000/api/key/enc.keys" > enc.keyinfo
+echo $(pwd)/enc.key >> enc.keyinfo
+echo "0123456789ABCDEF0123456789ABCDEF" >> enc.keyinfo
+```
+
+## 🎥 Video Processing
+
+### Convert MP4 to encrypted HLS:
+```bash
+ffmpeg -i your-video.mp4 \
+  -hls_time 10 \
+  -hls_key_info_file enc.keyinfo \
+  -hls_playlist_type vod \
+  -hls_segment_filename "public/videos/video-1/segment%03d.ts" \
+  -start_number 0 \
+  public/videos/video-1/playlist.m3u8
+```
+
+### Quick batch processing:
+```bash
+# Place video files as public/videos/video-1.mp4, video-2.mp4, etc.
+for i in {1..4}; do
+  mkdir -p "public/videos/video-$i"
+  ffmpeg -i "public/videos/video-$i.mp4" \
+    -hls_time 10 \
+    -hls_key_info_file enc.keyinfo \
+    -hls_playlist_type vod \
+    -hls_segment_filename "public/videos/video-$i/segment%03d.ts" \
+    -start_number 0 \
+    "public/videos/video-$i/playlist.m3u8"
+done
+```
+
+##  Run Application
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ **Visit:** `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Demo Login:**
+-  Email: `user@example.com` 
+-  Password: `password123`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+##  Key Features
 
-## Learn More
+- ✅ **AES-128 encrypted video streams**
+- ✅ **JWT authentication with cookies**
+- ✅ **Dynamic watermarks (email + timestamp)**
+- ✅ **10-second previews for guests**
+- ✅ **Responsive modern UI**
 
-To learn more about Next.js, take a look at the following resources:
+## 🔐 Security Notes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Production Setup:
+1. Use strong JWT secret
+2. Enable HTTPS
+3. Set secure cookie flags:
+```javascript
+httpOnly: true,
+secure: true, 
+sameSite: 'strict'
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 📁 File Structure:
+```
+public/videos/
+├── video-1/
+│   ├── playlist.m3u8
+│   └── segment000.ts, segment001.ts...
+├── video-1.mp4 (original)
+└── video-1.png (thumbnail)
+```
 
-## Deploy on Vercel
+##  Troubleshooting
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Video won't play**: Check FFmpeg completed and segments exist
+- **Auth issues**: Verify JWT_SECRET and clear browser storage
+- **Missing watermark**: Check user is logged in
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+⚠️ **Never commit `enc.key` to version control!**
